@@ -1,4 +1,7 @@
-""" This script checks if all modules, classes, functions, and methods have docstrings."""
+"""
+This script checks if all modules,
+classes, functions, and methods have docstrings.
+"""
 
 import os
 import unittest
@@ -10,7 +13,8 @@ class TestDocumentation(unittest.TestCase):
     """Also it's important to document the tests 😁"""
 
     def test_documentation(self):
-        """Check if all modules, classes, functions, and methods have docstrings."""
+        """Check if all modules, classes,
+        functions, and methods have docstrings."""
         root_dir = "./src"  # specify your root directory here
         for root, dirs, files in os.walk(root_dir):
             for file in files:
@@ -22,28 +26,35 @@ class TestDocumentation(unittest.TestCase):
                     self.check_docstrings(tree, file_path)
 
     def check_docstrings(self, node, file_path):
-        """Check if all modules, classes, functions, and methods have docstrings."""
+        """Check if all modules, classes, functions,
+        and methods have docstrings."""
         if isinstance(node, ast.Module):
             self.assertIsNotNone(
-                ast.get_docstring(node), f"Module {file_path} is missing a docstring"
+                ast.get_docstring(node),
+                f"Module {file_path} is missing a docstring"
             )
 
         for child in ast.iter_child_nodes(node):
             if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 self.assertIsNotNone(
                     ast.get_docstring(child),
-                    f"Function {child.name} in {file_path} is missing a docstring",
+                    f"Function {child.name} in {file_path}\
+                        is missing a docstring",
                 )
             elif isinstance(child, ast.ClassDef):
                 self.assertIsNotNone(
                     ast.get_docstring(child),
-                    f"Class {child.name} in {file_path} is missing a docstring",
+                    f"Class {child.name} in {file_path}\
+                        is missing a docstring",
                 )
                 for class_child in child.body:
-                    if isinstance(class_child, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    if isinstance(class_child,
+                                  (ast.FunctionDef, ast.AsyncFunctionDef)):
                         self.assertIsNotNone(
                             ast.get_docstring(class_child),
-                            f"Method {class_child.name} in class {child.name} in {file_path} is missing a docstring",
+                            f"Method {class_child.name}\
+                                in class {child.name} in "
+                            f"{file_path} is missing a docstring",
                         )
             self.check_docstrings(child, file_path)
 

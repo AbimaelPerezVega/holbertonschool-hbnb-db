@@ -1,134 +1,64 @@
-"""
-Amenity related functionality
-"""
-
+from sqlalchemy import Column, String, Text, Integer, ForeignKey
+from sqlalchemy.orm import relationship
 from src.models.base import Base
+from src.models.place_amenity import PlaceAmenity  # Importing PlaceAmenity model #type: ignore
+from src import db
 
 
-class Amenity(Base):
-    """Amenity representation"""
+class Amenity(db.Model):
+    __tablename__ = 'amenities'
 
-    name: str
+    id = Column(String, primary_key=True)
+    name = Column(String, nullable=False)
 
-    def __init__(self, name: str, **kw) -> None:
-        """Dummy init"""
-        super().__init__(**kw)
+    places = relationship("PlaceAmenity", back_populates="amenity")
 
+    def __init__(self, name, **kwargs):
+        super().__init__(**kwargs)
         self.name = name
 
-    def __repr__(self) -> str:
-        """Dummy repr"""
+    def __repr__(self):
         return f"<Amenity {self.id} ({self.name})>"
 
-    def to_dict(self) -> dict:
-        """Dictionary representation of the object"""
+    def to_dict(self):
         return {
             "id": self.id,
             "name": self.name,
-            "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat(),
         }
 
     @staticmethod
-    def create(data: dict) -> "Amenity":
-        """Create a new amenity"""
-        from src.persistence import repo
-
+    def create(data):
         amenity = Amenity(**data)
-
-        repo.save(amenity)
-
+        db.session.add(amenity)
+        db.session.commit()
         return amenity
 
     @staticmethod
-    def update(amenity_id: str, data: dict) -> "Amenity | None":
-        """Update an existing amenity"""
-        from src.persistence import repo
-
-        amenity: Amenity | None = Amenity.get(amenity_id)
-
+    def update(amenity_id, data):
+        amenity = Amenity.query.get(amenity_id)
         if not amenity:
             return None
 
-        if "name" in data:
-            amenity.name = data["name"]
+        for key, value in data.items():
+            setattr(amenity, key, value)
 
-        repo.update(amenity)
-
+        db.session.commit()
         return amenity
 
-
-class PlaceAmenity(Base):
-    """PlaceAmenity representation"""
-
-    place_id: str
-    amenity_id: str
-
-    def __init__(self, place_id: str, amenity_id: str, **kw) -> None:
-        """Dummy init"""
-        super().__init__(**kw)
-
-        self.place_id = place_id
-        self.amenity_id = amenity_id
-
-    def __repr__(self) -> str:
-        """Dummy repr"""
-        return f"<PlaceAmenity ({self.place_id} - {self.amenity_id})>"
-
-    def to_dict(self) -> dict:
-        """Dictionary representation of the object"""
-        return {
-            "id": self.id,
-            "place_id": self.place_id,
-            "amenity_id": self.amenity_id,
-            "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat(),
-        }
-
     @staticmethod
-    def get(place_id: str, amenity_id: str) -> "PlaceAmenity | None":
-        """Get a PlaceAmenity object by place_id and amenity_id"""
-        from src.persistence import repo
-
-        place_amenities: list[PlaceAmenity] = repo.get_all("placeamenity")
-
-        for place_amenity in place_amenities:
-            if (
-                place_amenity.place_id == place_id
-                and place_amenity.amenity_id == amenity_id
-            ):
-                return place_amenity
-
-        return None
-
-    @staticmethod
-    def create(data: dict) -> "PlaceAmenity":
-        """Create a new PlaceAmenity object"""
-        from src.persistence import repo
-
-        new_place_amenity = PlaceAmenity(**data)
-
-        repo.save(new_place_amenity)
-
-        return new_place_amenity
-
-    @staticmethod
-    def delete(place_id: str, amenity_id: str) -> bool:
-        """Delete a PlaceAmenity object by place_id and amenity_id"""
-        from src.persistence import repo
-
-        place_amenity = PlaceAmenity.get(place_id, amenity_id)
-
-        if not place_amenity:
+    def delete(amenity_id):
+        amenity = Amenity.query.get(amenity_id)
+        if not amenity:
             return False
 
-        repo.delete(place_amenity)
-
+        db.session.delete(amenity)
+        db.session.commit()
         return True
 
     @staticmethod
-    def update(entity_id: str, data: dict):
-        """Not implemented, isn't needed"""
-        raise NotImplementedError(
-            "This method is defined only because of the Base class"
-        )
+    def get(amenity_id):
+        return Amenity.query.get(amenity_id)
+
+    @staticmethod
+    def get_all():
+        return Amenity.query.all()

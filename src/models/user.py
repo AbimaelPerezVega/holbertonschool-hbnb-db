@@ -1,30 +1,43 @@
-"""
-User related functionality
-"""
-
+from sqlalchemy import Column, String, Boolean, DateTime, Integer  # Include Integer type
+from sqlalchemy.orm import relationship
 from src.models.base import Base
+from src import db
 
 
-class User(Base):
-    """User representation"""
+class User(Base, db.Model):
+    __tablename__ = 'users'
 
-    email: str
-    first_name: str
-    last_name: str
+    id = Column(Integer, primary_key=True)  # Ensure Integer type is used
+    email = Column(String, unique=True, nullable=False)
+    first_name = Column(String, nullable=False)
+    last_name = Column(String, nullable=False)
+    password = Column(String, nullable=False)
+    is_admin = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=db.func.current_timestamp())
+    updated_at = Column(DateTime, onupdate=db.func.current_timestamp())
 
-    def __init__(self, email: str, first_name: str, last_name: str, **kw):
-        """Dummy init"""
-        super().__init__(**kw)
+    reviews = relationship("Review", back_populates="user")
+    places = relationship("Place", back_populates="host")
+
+    def __init__(
+            self,
+            email,
+            first_name,
+            last_name,
+            password,
+            is_admin=False,
+            **kwargs):
+        super().__init__(**kwargs)
         self.email = email
         self.first_name = first_name
         self.last_name = last_name
+        self.password = password
+        self.is_admin = is_admin
 
-    def __repr__(self) -> str:
-        """Dummy repr"""
+    def __repr__(self):
         return f"<User {self.id} ({self.email})>"
 
-    def to_dict(self) -> dict:
-        """Dictionary representation of the object"""
+    def to_dict(self):
         return {
             "id": self.id,
             "email": self.email,
@@ -35,29 +48,19 @@ class User(Base):
         }
 
     @staticmethod
-    def create(user: dict) -> "User":
-        """Create a new user"""
-        from src.persistence import repo
-
-        users: list["User"] = User.get_all()
-
-        for u in users:
-            if u.email == user["email"]:
-                raise ValueError("User already exists")
+    def create(user):
+        existing_user = User.query.filter_by(email=user["email"]).first()
+        if existing_user:
+            raise ValueError("User already exists")
 
         new_user = User(**user)
-
-        repo.save(new_user)
-
+        db.session.add(new_user)
+        db.session.commit()
         return new_user
 
     @staticmethod
-    def update(user_id: str, data: dict) -> "User | None":
-        """Update an existing user"""
-        from src.persistence import repo
-
-        user: User | None = User.get(user_id)
-
+    def update(user_id, data):
+        user = User.query.get(user_id)
         if not user:
             return None
 
@@ -67,7 +70,10 @@ class User(Base):
             user.first_name = data["first_name"]
         if "last_name" in data:
             user.last_name = data["last_name"]
+        if "password" in data:
+            user.password = data["password"]
+        if "is_admin" in data:
+            user.is_admin = data["is_admin"]
 
-        repo.update(user)
-
+        db.session.commit()
         return user

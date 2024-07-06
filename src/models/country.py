@@ -1,62 +1,63 @@
-"""
-Country related functionality
-"""
+from sqlalchemy import Column, String
+from sqlalchemy.orm import relationship
+from src import db
 
 
-class Country:
-    """
-    Country representation
+class Country(db.Model):
+    __tablename__ = 'countries'
 
-    This class does NOT inherit from Base, you can't delete or update a country
+    code = Column(String, primary_key=True)
+    name = Column(String, nullable=False)
 
-    This class is used to get and list countries
-    """
+    cities = relationship("City", back_populates="country")
 
-    name: str
-    code: str
-    cities: list
-
-    def __init__(self, name: str, code: str, **kw) -> None:
-        """Dummy init"""
-        super().__init__(**kw)
+    def __init__(self, name, code, **kwargs):
+        super().__init__(**kwargs)
         self.name = name
         self.code = code
 
-    def __repr__(self) -> str:
-        """Dummy repr"""
+    def __repr__(self):
         return f"<Country {self.code} ({self.name})>"
 
-    def to_dict(self) -> dict:
-        """Returns the dictionary representation of the country"""
+    def to_dict(self):
         return {
-            "name": self.name,
             "code": self.code,
+            "name": self.name
         }
 
     @staticmethod
-    def get_all() -> list["Country"]:
-        """Get all countries"""
-        from src.persistence import repo
-
-        countries: list["Country"] = repo.get_all("country")
-
-        return countries
-
-    @staticmethod
-    def get(code: str) -> "Country | None":
-        """Get a country by its code"""
-        for country in Country.get_all():
-            if country.code == code:
-                return country
-        return None
-
-    @staticmethod
-    def create(name: str, code: str) -> "Country":
-        """Create a new country"""
-        from src.persistence import repo
-
-        country = Country(name, code)
-
-        repo.save(country)
-
+    def create(data):
+        country = Country(**data)
+        db.session.add(country)
+        db.session.commit()
         return country
+
+    @staticmethod
+    def update(country_code, data):
+        country = Country.query.get(country_code)
+        if not country:
+            return None
+
+        for key, value in data.items():
+            setattr(country, key, value)
+
+        db.session.commit()
+        return country
+
+    @staticmethod
+    def delete(country_code):
+        country = Country.query.get(country_code)
+        if not country:
+            return False
+
+        db.session.delete(country)
+        db.session.commit()
+        return True
+
+    @staticmethod
+    def get(country_code):
+        return Country.query.get(country_code)
+
+    @staticmethod
+    def get_all():
+        return Country.query.all()

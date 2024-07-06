@@ -1,4 +1,8 @@
 flask
 flask-cors
-
+SQLAlchemy
+Flask-SQLAlchemy
+Flask-Migrate
+Flask-JWT-Extended
 gunicorn
+psycopg2

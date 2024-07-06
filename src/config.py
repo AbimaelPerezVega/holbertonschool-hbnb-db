@@ -4,7 +4,6 @@ This module exports configuration classes for the Flask application.
 - DevelopmentConfig
 - TestingConfig
 - ProductionConfig
-
 """
 
 from abc import ABC
@@ -16,11 +15,11 @@ class Config(ABC):
     Initial configuration settings
     This class should not be instantiated directly
     """
-
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'you-will-never-guess'
     DEBUG = False
     TESTING = False
-
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'your_jwt_secret_key')
 
 
 class DevelopmentConfig(Config):
@@ -38,7 +37,6 @@ class DevelopmentConfig(Config):
         # Do something
     ```
     """
-
     SQLALCHEMY_DATABASE_URI = os.getenv(
         "DATABASE_URL", "sqlite:///hbnb_dev.db")
     DEBUG = True
@@ -59,9 +57,10 @@ class TestingConfig(Config):
     ```
 
     """
-
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///testing.db'
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    JWT_SECRET_KEY = 'your_jwt_secret_key'
 
 
 class ProductionConfig(Config):
@@ -72,11 +71,7 @@ class ProductionConfig(Config):
 
     The debug or testing options are disabled in this configuration.
     """
-
     TESTING = False
     DEBUG = False
-
     SQLALCHEMY_DATABASE_URI = os.getenv(
-        "DATABASE_URL",
-        "postgresql://user:password@localhost/hbnb_prod"
-    )
+        "DATABASE_URL", "postgresql://user:password@localhost/hbnb_prod")

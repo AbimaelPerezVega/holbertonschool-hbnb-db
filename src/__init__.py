@@ -1,9 +1,16 @@
-""" Initialize the Flask app. """
+"""
+Initialize the Flask app.
+"""
 
-from flask import Flask
-from flask_cors import CORS
+from flask import Flask  # type:ignore
+from flask_cors import CORS  # type:ignore
+from flask_sqlalchemy import SQLAlchemy  # type:ignore
+from flask_migrate import Migrate  # type:ignore
+from flask_jwt_extended import JWTManager  # type:ignore
 
 cors = CORS()
+db = SQLAlchemy()
+migrate = Migrate()
 
 
 def create_app(config_class="src.config.DevelopmentConfig") -> Flask:
@@ -20,18 +27,31 @@ def create_app(config_class="src.config.DevelopmentConfig") -> Flask:
     register_routes(app)
     register_handlers(app)
 
+    with app.app_context():
+        # Import parts of our application
+        from .models.user import User
+        from .models.country import Country
+        from .models.city import City
+        from .models.place import Place
+        from .models.amenity import Amenity
+        from .models.review import Review
+
+        db.create_all()  # Create database tables for all models
+
     return app
 
 
 def register_extensions(app: Flask) -> None:
-    """Register the extensions for the Flask app"""
+    """Register the extensions for the Flask app."""
     cors.init_app(app, resources={r"/api/*": {"origins": "*"}})
+    db.init_app(app)
+    migrate.init_app(app, db)
+    JWTManager(app)
     # Further extensions can be added here
 
 
 def register_routes(app: Flask) -> None:
-    """Import and register the routes for the Flask app"""
-
+    """Import and register the routes for the Flask app."""
     # Import the routes here to avoid circular imports
     from src.routes.users import users_bp
     from src.routes.countries import countries_bp
@@ -51,9 +71,10 @@ def register_routes(app: Flask) -> None:
 
 def register_handlers(app: Flask) -> None:
     """Register the error handlers for the Flask app."""
-    app.errorhandler(404)(lambda e: (
-        {"error": "Not found", "message": str(e)}, 404
-    )
+    app.errorhandler(404)(
+        lambda e: (
+            {"error": "Not found", "message": str(e)}, 404
+        )
     )
     app.errorhandler(400)(
         lambda e: (
